@@ -32,8 +32,8 @@
               <span aria-hidden="true">‹</span>
             </button>
             <strong id="episode-title">第 3 集</strong>
-            <button class="icon-button glass" id="reset-button" data-reset-demo type="button" aria-label="重置测试状态" title="重置测试状态">
-              <span aria-hidden="true">↻</span>
+            <button class="icon-button glass" id="open-profile-button" type="button" aria-label="打开个人中心" title="个人中心">
+              <span aria-hidden="true">我</span>
             </button>
           </header>
 
@@ -132,7 +132,7 @@
         <div class="unlock-success">
           <div>
             <p>已解锁</p>
-            <h2>完整卡池已开放</h2>
+            <h2 id="pool-unlock-title">卡池已开放</h2>
           </div>
           <button class="draw-button" id="draw-button" type="button">抽取一次</button>
         </div>
@@ -162,6 +162,69 @@
           <div class="order-card" id="order-card"></div>
         </div>
       </section>
+      </section>
+
+      <section class="screen-view profile-view" id="profile-view" hidden aria-label="个人中心">
+        <header class="app-bar">
+          <button class="icon-button" id="back-from-profile-button" type="button" aria-label="返回">
+            <span aria-hidden="true">‹</span>
+          </button>
+          <div class="title-stack">
+            <p>Personal Center</p>
+            <h1>个人中心</h1>
+          </div>
+          <button class="icon-button" data-reset-demo type="button" aria-label="重置测试状态" title="重置测试状态">
+            <span aria-hidden="true">↻</span>
+          </button>
+        </header>
+
+        <section class="profile-head">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=220&q=82" alt="用户头像">
+          <h2>Dream User</h2>
+          <p>短剧与限定卡池收藏夹</p>
+        </section>
+
+        <section class="balance-panel">
+          <div class="balance-icon" aria-hidden="true">★</div>
+          <div>
+            <p>Balance</p>
+            <h2 id="profile-balance">0 枚</h2>
+          </div>
+          <button class="profile-mini-button" id="profile-recharge-button" type="button">充值</button>
+        </section>
+
+        <section class="profile-list" aria-label="个人功能">
+          <button class="profile-row" type="button" id="link-email-button">
+            <span aria-hidden="true">✉</span>
+            <strong>Link an email</strong>
+            <em id="email-status">未绑定</em>
+          </button>
+          <button class="profile-row" type="button" id="profile-save-button">
+            <span aria-hidden="true">★</span>
+            <strong>Save</strong>
+            <em id="profile-save-status">0</em>
+          </button>
+          <button class="profile-row" type="button" id="profile-like-button">
+            <span aria-hidden="true">♥</span>
+            <strong>Like</strong>
+            <em id="profile-like-status">0</em>
+          </button>
+          <button class="profile-row" type="button" id="profile-history-button">
+            <span aria-hidden="true">▣</span>
+            <strong>Watch history</strong>
+            <em>第 3 集</em>
+          </button>
+          <button class="profile-row" type="button" id="profile-recharge-record-button">
+            <span aria-hidden="true">＋</span>
+            <strong>Recharge record</strong>
+            <em id="recharge-status">暂无</em>
+          </button>
+          <button class="profile-row" type="button" id="profile-consumption-record-button">
+            <span aria-hidden="true">¥</span>
+            <strong>Consumption record</strong>
+            <em id="consumption-status">暂无</em>
+          </button>
+        </section>
       </section>
     </section>
   </main>
@@ -194,6 +257,7 @@
         </button>
       </header>
       <div class="more-actions">
+        <button id="more-profile-button" type="button">打开个人中心</button>
         <button id="more-pool-button" type="button">进入限定卡池</button>
         <button id="more-pay-button" type="button">付费解锁内容</button>
       </div>

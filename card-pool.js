@@ -1,6 +1,7 @@
 const unlockKey = "paid-card-pool-unlocked";
 const orderKey = "paid-card-pool-order";
 const historyKey = "paid-card-pool-history";
+const unlockedCardsKey = "paid-card-pool-unlocked-cards";
 
 const cards = [
   {
@@ -49,6 +50,15 @@ const cards = [
     image: "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=800&q=82"
   },
   {
+    id: "sr-04",
+    name: "花火回声",
+    rarity: "SR",
+    rate: 5.6,
+    tag: "剧情卡",
+    description: "节日花火下的支线剧情卡面。",
+    image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=82"
+  },
+  {
     id: "r-01",
     name: "白昼花径",
     rarity: "R",
@@ -92,6 +102,15 @@ const cards = [
     tag: "基础卡",
     description: "灯光主题普通卡面。",
     image: "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=800&q=82"
+  },
+  {
+    id: "r-06",
+    name: "薄暮便签",
+    rarity: "R",
+    rate: 13.6,
+    tag: "基础卡",
+    description: "记录日常线索的普通卡面。",
+    image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=800&q=82"
   }
 ];
 
@@ -117,8 +136,10 @@ const state = {
   unlocked: localStorage.getItem(unlockKey) === "true",
   order: readJson(orderKey, null),
   history: readJson(historyKey, []),
+  unlockedCards: readJson(unlockedCardsKey, []),
   activeTab: "pool",
   view: "player",
+  previousView: "player",
   currentVideo: 0,
   paying: false,
   currentEpisode: 3,
@@ -130,6 +151,7 @@ const state = {
 const elements = {
   playerView: document.getElementById("player-view"),
   poolView: document.getElementById("pool-view"),
+  profileView: document.getElementById("profile-view"),
   dramaVideo: document.getElementById("drama-video"),
   videoButtons: document.querySelectorAll(".video-switch-button"),
   videoProgress: document.getElementById("video-progress"),
@@ -145,10 +167,13 @@ const elements = {
   playerLockCard: document.getElementById("player-lock-card"),
   goPoolButton: document.getElementById("go-pool-button"),
   playerPayButton: document.getElementById("player-pay-button"),
+  openProfileButton: document.getElementById("open-profile-button"),
+  backFromProfileButton: document.getElementById("back-from-profile-button"),
   backToPlayerButton: document.getElementById("back-to-player-button"),
   status: document.getElementById("unlock-status"),
   lockedPanel: document.getElementById("locked-panel"),
   unlockedPanel: document.getElementById("unlocked-panel"),
+  poolUnlockTitle: document.getElementById("pool-unlock-title"),
   openPayButton: document.getElementById("open-pay-button"),
   closePayButton: document.getElementById("close-pay-button"),
   confirmPayButton: document.getElementById("confirm-pay-button"),
@@ -167,8 +192,22 @@ const elements = {
   episodeGrid: document.getElementById("episode-grid"),
   moreSheet: document.getElementById("more-sheet"),
   closeMoreButton: document.getElementById("close-more-button"),
+  moreProfileButton: document.getElementById("more-profile-button"),
   morePoolButton: document.getElementById("more-pool-button"),
   morePayButton: document.getElementById("more-pay-button"),
+  profileBalance: document.getElementById("profile-balance"),
+  emailStatus: document.getElementById("email-status"),
+  profileSaveStatus: document.getElementById("profile-save-status"),
+  profileLikeStatus: document.getElementById("profile-like-status"),
+  rechargeStatus: document.getElementById("recharge-status"),
+  consumptionStatus: document.getElementById("consumption-status"),
+  linkEmailButton: document.getElementById("link-email-button"),
+  profileSaveButton: document.getElementById("profile-save-button"),
+  profileLikeButton: document.getElementById("profile-like-button"),
+  profileHistoryButton: document.getElementById("profile-history-button"),
+  profileRechargeButton: document.getElementById("profile-recharge-button"),
+  profileRechargeRecordButton: document.getElementById("profile-recharge-record-button"),
+  profileConsumptionRecordButton: document.getElementById("profile-consumption-record-button"),
   cardDetail: document.getElementById("card-detail"),
   closeDetailButton: document.getElementById("close-detail-button"),
   detailImage: document.getElementById("detail-image"),
@@ -182,6 +221,8 @@ const playbackSpeeds = [1, 1.25, 1.5, 2];
 elements.openPayButton.addEventListener("click", openPaymentSheet);
 elements.playerPayButton.addEventListener("click", handlePlayerPay);
 elements.goPoolButton.addEventListener("click", () => setView("pool"));
+elements.openProfileButton.addEventListener("click", openProfile);
+elements.backFromProfileButton.addEventListener("click", closeProfile);
 elements.backToPlayerButton.addEventListener("click", () => setView("player"));
 elements.closePayButton.addEventListener("click", closePaymentSheet);
 elements.confirmPayButton.addEventListener("click", confirmPayment);
@@ -197,6 +238,10 @@ elements.speedButton.addEventListener("click", cycleSpeed);
 elements.introButton.addEventListener("click", () => showToast("霸总短剧第 3 集，付费节点后开放限定卡池。"));
 elements.closeEpisodeButton.addEventListener("click", closeEpisodeSheet);
 elements.closeMoreButton.addEventListener("click", closeMoreSheet);
+elements.moreProfileButton.addEventListener("click", () => {
+  closeMoreSheet();
+  openProfile();
+});
 elements.morePoolButton.addEventListener("click", () => {
   closeMoreSheet();
   setView("pool");
@@ -210,6 +255,37 @@ elements.videoButtons.forEach((button) => {
   button.addEventListener("click", () => {
     switchVideo(Number(button.dataset.videoIndex));
   });
+});
+
+elements.linkEmailButton.addEventListener("click", () => {
+  elements.emailStatus.textContent = "已绑定";
+  showToast("邮箱已绑定");
+});
+elements.profileSaveButton.addEventListener("click", () => {
+  state.saved = true;
+  elements.saveButton.querySelector("span").textContent = "★";
+  renderProfile();
+  renderPlayer();
+  showToast("已同步收藏");
+});
+elements.profileLikeButton.addEventListener("click", () => {
+  state.liked = true;
+  elements.likeButton.querySelector("span").textContent = "♥";
+  renderProfile();
+  renderPlayer();
+  showToast("已同步点赞");
+});
+elements.profileHistoryButton.addEventListener("click", () => setView("player"));
+elements.profileRechargeButton.addEventListener("click", () => showToast("演示余额无需真实充值"));
+elements.profileRechargeRecordButton.addEventListener("click", () => {
+  state.activeTab = "order";
+  setView("pool");
+  renderTabs();
+});
+elements.profileConsumptionRecordButton.addEventListener("click", () => {
+  state.activeTab = "history";
+  setView("pool");
+  renderTabs();
 });
 
 elements.dramaVideo.addEventListener("click", toggleVideoPlayback);
@@ -255,17 +331,34 @@ function render() {
   elements.status.textContent = state.unlocked ? "已解锁" : "待解锁";
   elements.lockedPanel.hidden = state.unlocked;
   elements.unlockedPanel.hidden = !state.unlocked;
+  renderPoolStatus();
   renderCards();
   renderRates();
   renderHistory();
   renderOrder();
   renderEpisodes();
+  renderProfile();
   renderTabs();
+}
+
+function renderPoolStatus() {
+  if (!state.unlocked) {
+    elements.poolUnlockTitle.textContent = "卡池已开放";
+    elements.drawButton.textContent = "抽取一次";
+    elements.drawButton.disabled = false;
+    return;
+  }
+
+  const unlockedCount = state.unlockedCards.length;
+  elements.poolUnlockTitle.textContent = `已解锁 ${unlockedCount}/${cards.length} 个内容`;
+  elements.drawButton.textContent = unlockedCount >= cards.length ? "已全部解锁" : "抽取一次";
+  elements.drawButton.disabled = unlockedCount >= cards.length;
 }
 
 function renderView() {
   elements.playerView.hidden = state.view !== "player";
   elements.poolView.hidden = state.view !== "pool";
+  elements.profileView.hidden = state.view !== "profile";
 }
 
 function renderPlayer() {
@@ -286,19 +379,30 @@ function renderPlayer() {
   const lockTitle = elements.playerLockCard.querySelector("h2");
   const lockText = elements.playerLockCard.querySelector("span");
   if (state.unlocked) {
-    lockTitle.textContent = "限定卡池已解锁";
-    lockText.textContent = "可以查看完整卡面、掉率和抽取记录。";
+    lockTitle.textContent = "限定卡池已开放";
+    lockText.textContent = "每次抽取会随机解锁 1 个未解锁内容。";
   } else {
     lockTitle.textContent = "解锁限定卡池内容";
     lockText.textContent = "继续观看专属片段，并查看 12 张限定卡面。";
   }
 }
 
+function renderProfile() {
+  elements.profileBalance.textContent = state.unlocked ? "18 枚" : "0 枚";
+  elements.profileSaveStatus.textContent = state.saved ? "1" : "0";
+  elements.profileLikeStatus.textContent = state.liked ? "1" : "0";
+  elements.rechargeStatus.textContent = state.order ? "1 条" : "暂无";
+  elements.consumptionStatus.textContent = state.history.length ? `${state.history.length} 条` : "暂无";
+}
+
 function renderCards() {
   elements.cardGrid.innerHTML = cards.map((card) => {
-    const lockedClass = state.unlocked ? "" : " is-locked";
+    const cardUnlocked = state.unlockedCards.includes(card.id);
+    const contentVisible = state.unlocked && cardUnlocked;
+    const lockedClass = contentVisible ? "" : " is-locked";
     const rarityClass = card.rarity.toLowerCase();
-    const lockedMarkup = state.unlocked ? "" : `<div class="lock-veil"><span>LOCKED</span></div>`;
+    const lockedText = state.unlocked ? "抽取解锁" : "付费解锁";
+    const lockedMarkup = contentVisible ? "" : `<div class="lock-veil"><span>${lockedText}</span></div>`;
 
     return `
       <button class="pool-card${lockedClass}" type="button" data-card-id="${card.id}" aria-label="${card.name}">
@@ -318,6 +422,10 @@ function renderCards() {
       const card = cards.find((item) => item.id === button.dataset.cardId);
       if (!state.unlocked) {
         openPaymentSheet();
+        return;
+      }
+      if (!state.unlockedCards.includes(card.id)) {
+        showToast("该内容尚未抽到，点击抽取一次随机解锁");
         return;
       }
       openCardDetail(card);
@@ -488,6 +596,17 @@ function setView(view) {
   }
 }
 
+function openProfile() {
+  state.previousView = state.view === "profile" ? "player" : state.view;
+  state.view = "profile";
+  renderView();
+  renderProfile();
+}
+
+function closeProfile() {
+  setView(state.previousView || "player");
+}
+
 function handlePlayerPay() {
   if (state.unlocked) {
     setView("pool");
@@ -591,19 +710,31 @@ function drawCard() {
     return;
   }
 
-  const card = pickCard();
+  const card = pickLockedCard();
+  if (!card) {
+    showToast("所有内容都已解锁");
+    return;
+  }
+
+  state.unlockedCards.unshift(card.id);
+  localStorage.setItem(unlockedCardsKey, JSON.stringify(state.unlockedCards));
   state.history.unshift({
     cardId: card.id,
-    method: "单抽",
+    method: "随机解锁",
     time: Date.now()
   });
   state.history = state.history.slice(0, 20);
   localStorage.setItem(historyKey, JSON.stringify(state.history));
-  renderHistory();
+  render();
   openCardDetail(card);
 }
 
-function pickCard() {
+function pickLockedCard() {
+  const lockedCards = cards.filter((card) => !state.unlockedCards.includes(card.id));
+  if (!lockedCards.length) {
+    return null;
+  }
+
   const roll = Math.random() * 100;
   let rarity = "R";
   if (roll < 2.4) {
@@ -612,7 +743,10 @@ function pickCard() {
     rarity = "SR";
   }
 
-  const pool = cards.filter((card) => card.rarity === rarity);
+  let pool = lockedCards.filter((card) => card.rarity === rarity);
+  if (!pool.length) {
+    pool = lockedCards;
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -642,9 +776,11 @@ function resetDemo() {
   localStorage.removeItem(unlockKey);
   localStorage.removeItem(orderKey);
   localStorage.removeItem(historyKey);
+  localStorage.removeItem(unlockedCardsKey);
   state.unlocked = false;
   state.order = null;
   state.history = [];
+  state.unlockedCards = [];
   state.activeTab = "pool";
   state.view = "player";
   state.currentVideo = 0;

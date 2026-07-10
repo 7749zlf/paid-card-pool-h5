@@ -529,6 +529,12 @@ img {
   outline: none;
 }
 
+.draw-button:disabled {
+  cursor: default;
+  opacity: 0.62;
+  filter: saturate(0.7);
+}
+
 .unlock-success {
   display: flex;
   align-items: center;
@@ -538,6 +544,138 @@ img {
   border: 1px solid rgba(79, 179, 164, 0.32);
   border-radius: var(--radius);
   background: rgba(79, 179, 164, 0.08);
+}
+
+.profile-view {
+  background:
+    linear-gradient(180deg, rgba(217, 101, 79, 0.08), transparent 220px),
+    #111716;
+}
+
+.profile-head {
+  display: grid;
+  justify-items: center;
+  padding: 34px 22px 22px;
+  text-align: center;
+}
+
+.profile-head img {
+  width: 92px;
+  height: 92px;
+  border: 3px solid rgba(255, 247, 234, 0.16);
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.profile-head h2 {
+  margin: 14px 0 0;
+  color: var(--ink-strong);
+  font-size: 1.35rem;
+}
+
+.profile-head p {
+  margin: 6px 0 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.balance-panel {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0 16px 18px;
+  padding: 16px;
+  border: 1px solid rgba(217, 101, 79, 0.42);
+  border-radius: var(--radius);
+  background: rgba(255, 247, 234, 0.05);
+}
+
+.balance-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff9ef;
+  background: linear-gradient(135deg, var(--accent), #b84953);
+  font-weight: 900;
+}
+
+.balance-panel p,
+.balance-panel h2 {
+  margin: 0;
+}
+
+.balance-panel p {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+}
+
+.balance-panel h2 {
+  margin-top: 3px;
+  color: var(--ink-strong);
+  font-size: 1.12rem;
+}
+
+.profile-mini-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(217, 101, 79, 0.54);
+  border-radius: var(--radius);
+  color: #fff9ef;
+  background: rgba(217, 101, 79, 0.18);
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.profile-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 24px;
+}
+
+.profile-row {
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-main);
+  background: rgba(255, 247, 234, 0.045);
+  cursor: pointer;
+  text-align: left;
+}
+
+.profile-row span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ink-strong);
+  background: rgba(255, 247, 234, 0.08);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.profile-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-strong);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.profile-row em {
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  font-style: normal;
 }
 
 .tab-bar {
