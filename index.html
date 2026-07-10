@@ -6,20 +6,95 @@
   <title>付费解锁卡池 | H5</title>
   <meta name="description" content="付费解锁卡池内容的 H5 前端演示。">
   <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="preconnect" href="https://interactive-examples.mdn.mozilla.net">
   <link rel="stylesheet" href="card-pool.css">
 </head>
 <body>
   <main class="unlock-app">
     <section class="phone-shell" aria-label="付费解锁卡池">
+      <section class="screen-view player-view" id="player-view" aria-label="短剧播放页">
+        <div class="video-stage">
+          <video
+            id="drama-video"
+            class="drama-video"
+            src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+            poster="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
+            autoplay
+            muted
+            loop
+            playsinline
+          ></video>
+
+          <div class="video-shade" aria-hidden="true"></div>
+
+          <header class="player-topbar">
+            <button class="icon-button glass" type="button" aria-label="返回">
+              <span aria-hidden="true">‹</span>
+            </button>
+            <strong id="episode-title">第 3 集</strong>
+            <button class="icon-button glass" id="reset-button" data-reset-demo type="button" aria-label="重置测试状态" title="重置测试状态">
+              <span aria-hidden="true">↻</span>
+            </button>
+          </header>
+
+          <div class="player-actions" aria-label="播放操作">
+            <button class="side-action" id="mute-button" type="button">
+              <span aria-hidden="true">🔇</span>
+              <strong>Mute</strong>
+            </button>
+            <button class="side-action" id="save-button" type="button">
+              <span aria-hidden="true">☆</span>
+              <strong>Save</strong>
+            </button>
+            <button class="side-action" id="like-button" type="button">
+              <span aria-hidden="true">♡</span>
+              <strong>Like</strong>
+            </button>
+            <button class="side-action" id="episode-button" type="button">
+              <span aria-hidden="true">▣</span>
+              <strong>Ep.3</strong>
+            </button>
+            <button class="side-action" id="more-button" type="button">
+              <span aria-hidden="true">•••</span>
+              <strong>More</strong>
+            </button>
+          </div>
+
+          <div class="player-copy">
+            <h1>In the Palm of His Hand</h1>
+            <p id="episode-meta">短剧 · 现代 · 第 3 集</p>
+            <button class="inline-link" id="intro-button" type="button">短剧简介</button>
+          </div>
+
+          <div class="player-progress">
+            <input id="video-progress" type="range" min="0" max="100" value="0" aria-label="播放进度">
+            <button id="speed-button" type="button">Speed</button>
+          </div>
+
+          <section class="player-lock-card" id="player-lock-card">
+            <div>
+              <p>付费节点</p>
+              <h2>解锁限定卡池内容</h2>
+              <span>继续观看专属片段，并查看 12 张限定卡面。</span>
+            </div>
+            <div class="player-lock-actions">
+              <button class="ghost-button" id="go-pool-button" type="button">查看卡池</button>
+              <button class="mini-pay-button" id="player-pay-button" type="button">¥18 解锁</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen-view pool-view" id="pool-view" hidden aria-label="限定卡池页">
       <header class="app-bar">
-        <button class="icon-button" type="button" aria-label="返回">
+        <button class="icon-button" id="back-to-player-button" type="button" aria-label="返回播放页">
           <span aria-hidden="true">‹</span>
         </button>
         <div class="title-stack">
           <p>限定卡池</p>
           <h1>朝花夕遇</h1>
         </div>
-        <button class="icon-button" id="reset-button" type="button" aria-label="重置测试状态" title="重置测试状态">
+        <button class="icon-button" id="pool-reset-button" data-reset-demo type="button" aria-label="重置测试状态" title="重置测试状态">
           <span aria-hidden="true">↻</span>
         </button>
       </header>
@@ -81,8 +156,43 @@
           <div class="order-card" id="order-card"></div>
         </div>
       </section>
+      </section>
     </section>
   </main>
+
+  <div class="sheet-backdrop" id="episode-sheet" hidden>
+    <section class="episode-sheet" role="dialog" aria-modal="true" aria-labelledby="episode-sheet-title">
+      <header class="sheet-head">
+        <div>
+          <p>剧集列表</p>
+          <h2 id="episode-sheet-title">Choose an episode</h2>
+        </div>
+        <button class="icon-button dark" id="close-episode-button" type="button" aria-label="关闭">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
+      <div class="episode-range">1-10</div>
+      <div class="episode-grid" id="episode-grid"></div>
+    </section>
+  </div>
+
+  <div class="sheet-backdrop" id="more-sheet" hidden>
+    <section class="more-sheet" role="dialog" aria-modal="true" aria-labelledby="more-sheet-title">
+      <header class="sheet-head">
+        <div>
+          <p>更多操作</p>
+          <h2 id="more-sheet-title">More</h2>
+        </div>
+        <button class="icon-button dark" id="close-more-button" type="button" aria-label="关闭">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
+      <div class="more-actions">
+        <button id="more-pool-button" type="button">进入限定卡池</button>
+        <button id="more-pay-button" type="button">付费解锁内容</button>
+      </div>
+    </section>
+  </div>
 
   <div class="sheet-backdrop" id="payment-sheet" hidden>
     <section class="payment-sheet" role="dialog" aria-modal="true" aria-labelledby="payment-title">

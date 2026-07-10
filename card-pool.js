@@ -100,10 +100,32 @@ const state = {
   order: readJson(orderKey, null),
   history: readJson(historyKey, []),
   activeTab: "pool",
-  paying: false
+  view: "player",
+  paying: false,
+  currentEpisode: 3,
+  saved: false,
+  liked: false,
+  speedIndex: 0
 };
 
 const elements = {
+  playerView: document.getElementById("player-view"),
+  poolView: document.getElementById("pool-view"),
+  dramaVideo: document.getElementById("drama-video"),
+  videoProgress: document.getElementById("video-progress"),
+  muteButton: document.getElementById("mute-button"),
+  saveButton: document.getElementById("save-button"),
+  likeButton: document.getElementById("like-button"),
+  episodeButton: document.getElementById("episode-button"),
+  moreButton: document.getElementById("more-button"),
+  speedButton: document.getElementById("speed-button"),
+  introButton: document.getElementById("intro-button"),
+  episodeTitle: document.getElementById("episode-title"),
+  episodeMeta: document.getElementById("episode-meta"),
+  playerLockCard: document.getElementById("player-lock-card"),
+  goPoolButton: document.getElementById("go-pool-button"),
+  playerPayButton: document.getElementById("player-pay-button"),
+  backToPlayerButton: document.getElementById("back-to-player-button"),
   status: document.getElementById("unlock-status"),
   lockedPanel: document.getElementById("locked-panel"),
   unlockedPanel: document.getElementById("unlocked-panel"),
@@ -118,8 +140,15 @@ const elements = {
   historyList: document.getElementById("history-list"),
   orderCard: document.getElementById("order-card"),
   drawButton: document.getElementById("draw-button"),
-  resetButton: document.getElementById("reset-button"),
+  resetButtons: document.querySelectorAll("[data-reset-demo]"),
   resultToast: document.getElementById("result-toast"),
+  episodeSheet: document.getElementById("episode-sheet"),
+  closeEpisodeButton: document.getElementById("close-episode-button"),
+  episodeGrid: document.getElementById("episode-grid"),
+  moreSheet: document.getElementById("more-sheet"),
+  closeMoreButton: document.getElementById("close-more-button"),
+  morePoolButton: document.getElementById("more-pool-button"),
+  morePayButton: document.getElementById("more-pay-button"),
   cardDetail: document.getElementById("card-detail"),
   closeDetailButton: document.getElementById("close-detail-button"),
   detailImage: document.getElementById("detail-image"),
@@ -128,12 +157,38 @@ const elements = {
   detailDescription: document.getElementById("detail-description")
 };
 
+const playbackSpeeds = [1, 1.25, 1.5, 2];
+
 elements.openPayButton.addEventListener("click", openPaymentSheet);
+elements.playerPayButton.addEventListener("click", handlePlayerPay);
+elements.goPoolButton.addEventListener("click", () => setView("pool"));
+elements.backToPlayerButton.addEventListener("click", () => setView("player"));
 elements.closePayButton.addEventListener("click", closePaymentSheet);
 elements.confirmPayButton.addEventListener("click", confirmPayment);
 elements.drawButton.addEventListener("click", drawCard);
-elements.resetButton.addEventListener("click", resetDemo);
+elements.resetButtons.forEach((button) => button.addEventListener("click", resetDemo));
 elements.closeDetailButton.addEventListener("click", closeCardDetail);
+elements.muteButton.addEventListener("click", toggleMute);
+elements.saveButton.addEventListener("click", toggleSave);
+elements.likeButton.addEventListener("click", toggleLike);
+elements.episodeButton.addEventListener("click", openEpisodeSheet);
+elements.moreButton.addEventListener("click", openMoreSheet);
+elements.speedButton.addEventListener("click", cycleSpeed);
+elements.introButton.addEventListener("click", () => showToast("霸总短剧第 3 集，付费节点后开放限定卡池。"));
+elements.closeEpisodeButton.addEventListener("click", closeEpisodeSheet);
+elements.closeMoreButton.addEventListener("click", closeMoreSheet);
+elements.morePoolButton.addEventListener("click", () => {
+  closeMoreSheet();
+  setView("pool");
+});
+elements.morePayButton.addEventListener("click", () => {
+  closeMoreSheet();
+  openPaymentSheet();
+});
+
+elements.dramaVideo.addEventListener("click", toggleVideoPlayback);
+elements.dramaVideo.addEventListener("timeupdate", syncVideoProgress);
+elements.videoProgress.addEventListener("input", seekVideo);
 
 document.querySelectorAll(".tab-button").forEach((button) => {
   button.addEventListener("click", () => {
@@ -148,6 +203,18 @@ elements.paymentSheet.addEventListener("click", (event) => {
   }
 });
 
+elements.episodeSheet.addEventListener("click", (event) => {
+  if (event.target === elements.episodeSheet) {
+    closeEpisodeSheet();
+  }
+});
+
+elements.moreSheet.addEventListener("click", (event) => {
+  if (event.target === elements.moreSheet) {
+    closeMoreSheet();
+  }
+});
+
 elements.cardDetail.addEventListener("click", (event) => {
   if (event.target === elements.cardDetail) {
     closeCardDetail();
@@ -157,6 +224,8 @@ elements.cardDetail.addEventListener("click", (event) => {
 render();
 
 function render() {
+  renderView();
+  renderPlayer();
   elements.status.textContent = state.unlocked ? "已解锁" : "待解锁";
   elements.lockedPanel.hidden = state.unlocked;
   elements.unlockedPanel.hidden = !state.unlocked;
@@ -164,7 +233,33 @@ function render() {
   renderRates();
   renderHistory();
   renderOrder();
+  renderEpisodes();
   renderTabs();
+}
+
+function renderView() {
+  elements.playerView.hidden = state.view !== "player";
+  elements.poolView.hidden = state.view !== "pool";
+}
+
+function renderPlayer() {
+  elements.episodeTitle.textContent = `第 ${state.currentEpisode} 集`;
+  elements.episodeMeta.textContent = `短剧 · 现代 · 第 ${state.currentEpisode} 集`;
+  elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
+  elements.saveButton.classList.toggle("is-active", state.saved);
+  elements.likeButton.classList.toggle("is-active", state.liked);
+  elements.playerLockCard.classList.toggle("is-unlocked", state.unlocked);
+  elements.playerPayButton.textContent = state.unlocked ? "去抽卡" : "¥18 解锁";
+
+  const lockTitle = elements.playerLockCard.querySelector("h2");
+  const lockText = elements.playerLockCard.querySelector("span");
+  if (state.unlocked) {
+    lockTitle.textContent = "限定卡池已解锁";
+    lockText.textContent = "可以查看完整卡面、掉率和抽取记录。";
+  } else {
+    lockTitle.textContent = "解锁限定卡池内容";
+    lockText.textContent = "继续观看专属片段，并查看 12 张限定卡面。";
+  }
 }
 
 function renderCards() {
@@ -259,6 +354,36 @@ function renderOrder() {
   `;
 }
 
+function renderEpisodes() {
+  elements.episodeGrid.innerHTML = Array.from({ length: 10 }, (_, index) => {
+    const episode = index + 1;
+    const isLocked = episode > 3 && !state.unlocked;
+    const activeClass = episode === state.currentEpisode ? " is-active" : "";
+    const lockedClass = isLocked ? " is-locked" : "";
+    return `
+      <button class="episode-item${activeClass}${lockedClass}" type="button" data-episode="${episode}">
+        ${episode}
+      </button>
+    `;
+  }).join("");
+
+  elements.episodeGrid.querySelectorAll(".episode-item").forEach((button) => {
+    button.addEventListener("click", () => {
+      const episode = Number(button.dataset.episode);
+      if (episode > 3 && !state.unlocked) {
+        closeEpisodeSheet();
+        openPaymentSheet();
+        return;
+      }
+      state.currentEpisode = episode;
+      closeEpisodeSheet();
+      renderPlayer();
+      renderEpisodes();
+      showToast(`已切换到第 ${episode} 集`);
+    });
+  });
+}
+
 function renderTabs() {
   document.querySelectorAll(".tab-button").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.tab === state.activeTab);
@@ -272,6 +397,7 @@ function renderTabs() {
 function openPaymentSheet() {
   if (state.unlocked) {
     showToast("卡池已解锁");
+    setView("pool");
     return;
   }
   elements.paymentSheet.hidden = false;
@@ -315,10 +441,95 @@ function confirmPayment() {
     elements.confirmPayButton.disabled = false;
     elements.payButtonText.textContent = "确认支付并解锁";
     elements.paymentSheet.hidden = true;
+    state.view = "pool";
     state.activeTab = "pool";
     render();
     showToast("支付成功，卡池已解锁");
   }, 900);
+}
+
+function setView(view) {
+  state.view = view;
+  renderView();
+  if (view === "player") {
+    elements.dramaVideo.play().catch(() => {});
+  }
+}
+
+function handlePlayerPay() {
+  if (state.unlocked) {
+    setView("pool");
+    state.activeTab = "pool";
+    renderTabs();
+    return;
+  }
+  openPaymentSheet();
+}
+
+function openEpisodeSheet() {
+  renderEpisodes();
+  elements.episodeSheet.hidden = false;
+}
+
+function closeEpisodeSheet() {
+  elements.episodeSheet.hidden = true;
+}
+
+function openMoreSheet() {
+  elements.moreSheet.hidden = false;
+}
+
+function closeMoreSheet() {
+  elements.moreSheet.hidden = true;
+}
+
+function toggleVideoPlayback() {
+  if (elements.dramaVideo.paused) {
+    elements.dramaVideo.play().catch(() => {});
+    return;
+  }
+  elements.dramaVideo.pause();
+}
+
+function toggleMute() {
+  elements.dramaVideo.muted = !elements.dramaVideo.muted;
+  elements.muteButton.querySelector("span").textContent = elements.dramaVideo.muted ? "🔇" : "🔈";
+  elements.muteButton.classList.toggle("is-active", !elements.dramaVideo.muted);
+}
+
+function toggleSave() {
+  state.saved = !state.saved;
+  elements.saveButton.querySelector("span").textContent = state.saved ? "★" : "☆";
+  renderPlayer();
+  showToast(state.saved ? "已收藏" : "已取消收藏");
+}
+
+function toggleLike() {
+  state.liked = !state.liked;
+  elements.likeButton.querySelector("span").textContent = state.liked ? "♥" : "♡";
+  renderPlayer();
+  showToast(state.liked ? "已点赞" : "已取消点赞");
+}
+
+function cycleSpeed() {
+  state.speedIndex = (state.speedIndex + 1) % playbackSpeeds.length;
+  const speed = playbackSpeeds[state.speedIndex];
+  elements.dramaVideo.playbackRate = speed;
+  elements.speedButton.textContent = speed === 1 ? "Speed" : `${speed}x`;
+}
+
+function syncVideoProgress() {
+  if (!Number.isFinite(elements.dramaVideo.duration) || !elements.dramaVideo.duration) {
+    return;
+  }
+  elements.videoProgress.value = String((elements.dramaVideo.currentTime / elements.dramaVideo.duration) * 100);
+}
+
+function seekVideo() {
+  if (!Number.isFinite(elements.dramaVideo.duration) || !elements.dramaVideo.duration) {
+    return;
+  }
+  elements.dramaVideo.currentTime = (Number(elements.videoProgress.value) / 100) * elements.dramaVideo.duration;
 }
 
 function drawCard() {
@@ -382,6 +593,18 @@ function resetDemo() {
   state.order = null;
   state.history = [];
   state.activeTab = "pool";
+  state.view = "player";
+  state.currentEpisode = 3;
+  state.saved = false;
+  state.liked = false;
+  state.speedIndex = 0;
+  elements.saveButton.querySelector("span").textContent = "☆";
+  elements.likeButton.querySelector("span").textContent = "♡";
+  elements.dramaVideo.muted = true;
+  elements.dramaVideo.playbackRate = 1;
+  elements.muteButton.querySelector("span").textContent = "🔇";
+  elements.muteButton.classList.remove("is-active");
+  elements.speedButton.textContent = "Speed";
   render();
   showToast("已重置为未解锁状态");
 }
