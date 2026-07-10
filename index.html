@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>付费解锁卡池 | H5</title>
+  <meta name="description" content="付费解锁卡池内容的 H5 前端演示。">
+  <link rel="preconnect" href="https://images.unsplash.com">
+  <link rel="stylesheet" href="card-pool.css">
+</head>
+<body>
+  <main class="unlock-app">
+    <section class="phone-shell" aria-label="付费解锁卡池">
+      <header class="app-bar">
+        <button class="icon-button" type="button" aria-label="返回">
+          <span aria-hidden="true">‹</span>
+        </button>
+        <div class="title-stack">
+          <p>限定卡池</p>
+          <h1>朝花夕遇</h1>
+        </div>
+        <button class="icon-button" id="reset-button" type="button" aria-label="重置测试状态" title="重置测试状态">
+          <span aria-hidden="true">↻</span>
+        </button>
+      </header>
+
+      <section class="pool-cover" aria-labelledby="pool-title">
+        <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=82" alt="晨光花园中的限定卡池背景">
+        <div class="cover-shade"></div>
+        <div class="status-pill" id="unlock-status">待解锁</div>
+        <div class="cover-copy">
+          <p>SSR 限定</p>
+          <h2 id="pool-title">朝花夕遇卡池</h2>
+          <span>12 张限定卡面 · 解锁后永久可看</span>
+        </div>
+      </section>
+
+      <section class="unlock-panel" id="locked-panel" aria-labelledby="locked-title">
+        <div class="unlock-copy">
+          <p>付费内容</p>
+          <h2 id="locked-title">解锁完整卡池</h2>
+          <span>包含卡面、掉率、卡牌详情和抽取记录。</span>
+        </div>
+        <button class="pay-button" id="open-pay-button" type="button">
+          <span>¥18.00</span>
+          <strong>立即解锁</strong>
+        </button>
+      </section>
+
+      <section class="pool-dashboard" id="unlocked-panel" hidden>
+        <div class="unlock-success">
+          <div>
+            <p>已解锁</p>
+            <h2>完整卡池已开放</h2>
+          </div>
+          <button class="draw-button" id="draw-button" type="button">抽取一次</button>
+        </div>
+      </section>
+
+      <nav class="tab-bar" aria-label="卡池内容">
+        <button class="tab-button is-active" type="button" data-tab="pool">卡池</button>
+        <button class="tab-button" type="button" data-tab="rates">掉率</button>
+        <button class="tab-button" type="button" data-tab="history">记录</button>
+        <button class="tab-button" type="button" data-tab="order">订单</button>
+      </nav>
+
+      <section class="tab-panels">
+        <div class="tab-panel" id="tab-pool">
+          <div class="card-grid" id="card-grid"></div>
+        </div>
+
+        <div class="tab-panel" id="tab-rates" hidden>
+          <div class="rate-list" id="rate-list"></div>
+        </div>
+
+        <div class="tab-panel" id="tab-history" hidden>
+          <div class="history-list" id="history-list"></div>
+        </div>
+
+        <div class="tab-panel" id="tab-order" hidden>
+          <div class="order-card" id="order-card"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="sheet-backdrop" id="payment-sheet" hidden>
+    <section class="payment-sheet" role="dialog" aria-modal="true" aria-labelledby="payment-title">
+      <header class="sheet-head">
+        <div>
+          <p>安全支付</p>
+          <h2 id="payment-title">解锁朝花夕遇卡池</h2>
+        </div>
+        <button class="icon-button dark" id="close-pay-button" type="button" aria-label="关闭">
+          <span aria-hidden="true">×</span>
+        </button>
+      </header>
+
+      <div class="checkout-summary">
+        <div>
+          <span>卡池内容</span>
+          <strong>12 张限定卡面</strong>
+        </div>
+        <div>
+          <span>支付金额</span>
+          <strong>¥18.00</strong>
+        </div>
+      </div>
+
+      <fieldset class="pay-methods">
+        <legend>付款方式</legend>
+        <label class="method-option">
+          <input type="radio" name="pay-method" value="paypal" checked>
+          <span>
+            <strong>PayPal</strong>
+            <small>沙盒收银台</small>
+          </span>
+        </label>
+        <label class="method-option">
+          <input type="radio" name="pay-method" value="card">
+          <span>
+            <strong>银行卡</strong>
+            <small>信用卡或借记卡</small>
+          </span>
+        </label>
+        <label class="method-option">
+          <input type="radio" name="pay-method" value="balance">
+          <span>
+            <strong>余额</strong>
+            <small>账户余额抵扣</small>
+          </span>
+        </label>
+      </fieldset>
+
+      <label class="agree-row">
+        <input id="agree-checkbox" type="checkbox" checked>
+        <span>支付后立即解锁，解锁状态将保存在当前浏览器。</span>
+      </label>
+
+      <button class="confirm-button" id="confirm-pay-button" type="button">
+        <span id="pay-button-text">确认支付并解锁</span>
+      </button>
+    </section>
+  </div>
+
+  <div class="result-toast" id="result-toast" role="status" hidden></div>
+
+  <div class="detail-backdrop" id="card-detail" hidden>
+    <section class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <button class="icon-button detail-close" id="close-detail-button" type="button" aria-label="关闭">
+        <span aria-hidden="true">×</span>
+      </button>
+      <img id="detail-image" src="" alt="">
+      <div class="detail-copy">
+        <p id="detail-rarity"></p>
+        <h2 id="detail-title"></h2>
+        <span id="detail-description"></span>
+      </div>
+    </section>
+  </div>
+
+  <script src="card-pool.js" defer></script>
+</body>
+</html>
