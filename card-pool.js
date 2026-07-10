@@ -167,6 +167,7 @@ const state = {
   paymentMode: "pool",
   payPromptVisible: false,
   payPromptVideo: null,
+  drawAnimationCard: null,
   paying: false,
   currentEpisode: 3,
   saved: false,
@@ -228,6 +229,12 @@ const elements = {
   drawButton: document.getElementById("draw-button"),
   resetButtons: document.querySelectorAll("[data-reset-demo]"),
   resultToast: document.getElementById("result-toast"),
+  drawAnimation: document.getElementById("draw-animation"),
+  drawCardReveal: document.getElementById("draw-card-reveal"),
+  drawCardImage: document.getElementById("draw-card-image"),
+  drawCardRarity: document.getElementById("draw-card-rarity"),
+  drawCardTitle: document.getElementById("draw-card-title"),
+  drawSkipButton: document.getElementById("draw-skip-button"),
   episodeSheet: document.getElementById("episode-sheet"),
   closeEpisodeButton: document.getElementById("close-episode-button"),
   episodeGrid: document.getElementById("episode-grid"),
@@ -258,6 +265,7 @@ const elements = {
 };
 
 const playbackSpeeds = [1, 1.25, 1.5, 2];
+let drawAnimationTimer = null;
 
 elements.openPayButton.addEventListener("click", () => openPaymentSheet("pool"));
 elements.playerPayButton.addEventListener("click", handlePlayerPay);
@@ -268,6 +276,7 @@ elements.backToPlayerButton.addEventListener("click", () => setView("player"));
 elements.closePayButton.addEventListener("click", closePaymentSheet);
 elements.confirmPayButton.addEventListener("click", confirmPayment);
 elements.drawButton.addEventListener("click", drawCard);
+elements.drawSkipButton.addEventListener("click", finishDrawAnimation);
 elements.resetButtons.forEach((button) => button.addEventListener("click", resetDemo));
 elements.closeDetailButton.addEventListener("click", closeCardDetail);
 elements.muteButton.addEventListener("click", toggleMute);
@@ -663,8 +672,7 @@ function confirmPayment() {
     state.activeTab = "pool";
     render();
     if (unlockedCard) {
-      openCardDetail(unlockedCard);
-      showToast("支付成功，已随机解锁 1 个内容");
+      startDrawAnimation(unlockedCard);
     } else {
       showToast("支付成功，卡池已开放");
     }
@@ -1063,6 +1071,39 @@ function openCardDetail(card) {
   elements.cardDetail.hidden = false;
 }
 
+function startDrawAnimation(card) {
+  if (!card) {
+    return;
+  }
+
+  window.clearTimeout(drawAnimationTimer);
+  state.drawAnimationCard = card;
+  const rarityClass = card.rarity.toLowerCase();
+  elements.drawCardReveal.className = `draw-card-reveal ${rarityClass}`;
+  elements.drawCardImage.src = card.image;
+  elements.drawCardImage.alt = card.name;
+  elements.drawCardRarity.textContent = card.rarity;
+  elements.drawCardTitle.textContent = card.name;
+  elements.drawAnimation.hidden = false;
+
+  // Restart CSS animations for consecutive draws in the same session.
+  void elements.drawAnimation.offsetWidth;
+  drawAnimationTimer = window.setTimeout(finishDrawAnimation, 3300);
+}
+
+function finishDrawAnimation() {
+  if (!state.drawAnimationCard) {
+    return;
+  }
+
+  const card = state.drawAnimationCard;
+  state.drawAnimationCard = null;
+  window.clearTimeout(drawAnimationTimer);
+  elements.drawAnimation.hidden = true;
+  openCardDetail(card);
+  showToast("支付成功，已随机解锁 1 个内容");
+}
+
 function closeCardDetail() {
   elements.cardDetail.hidden = true;
 }
@@ -1086,6 +1127,7 @@ function resetDemo() {
   state.currentVideo = 0;
   state.payPromptVisible = false;
   state.payPromptVideo = null;
+  state.drawAnimationCard = null;
   state.currentEpisode = 3;
   state.saved = false;
   state.liked = false;
@@ -1098,6 +1140,8 @@ function resetDemo() {
   elements.dramaVideos.forEach(resetVideo);
   elements.videoRail.classList.remove("is-dragging");
   elements.promptRail.classList.remove("is-dragging");
+  elements.drawAnimation.hidden = true;
+  window.clearTimeout(drawAnimationTimer);
   elements.speedButton.textContent = "Speed";
   render();
   playActiveVideo();

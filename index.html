@@ -349,6 +349,30 @@
 
   <div class="result-toast" id="result-toast" role="status" hidden></div>
 
+  <div class="draw-animation-backdrop" id="draw-animation" hidden>
+    <section class="draw-animation-panel" role="dialog" aria-modal="true" aria-labelledby="draw-animation-title">
+      <div class="draw-burst" aria-hidden="true"></div>
+      <div class="draw-sparks" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="draw-pack" aria-hidden="true">
+        <span></span>
+      </div>
+      <div class="draw-card-reveal" id="draw-card-reveal">
+        <img id="draw-card-image" src="" alt="">
+        <span id="draw-card-rarity">SSR</span>
+        <strong id="draw-card-title">晨樱之约</strong>
+      </div>
+      <p id="draw-animation-title">限定内容解锁中</p>
+      <button class="draw-skip-button" id="draw-skip-button" type="button">立即查看</button>
+    </section>
+  </div>
+
   <div class="detail-backdrop" id="card-detail" hidden>
     <section class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detail-title">
       <button class="icon-button detail-close" id="close-detail-button" type="button" aria-label="关闭">
