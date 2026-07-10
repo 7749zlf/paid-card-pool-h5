@@ -413,6 +413,7 @@ function renderPlayer() {
   elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
   elements.saveButton.classList.toggle("is-active", state.saved);
   elements.likeButton.classList.toggle("is-active", state.liked);
+  elements.videoStage.classList.toggle("has-pay-prompt", state.payPromptVisible);
   elements.playerLockCard.classList.toggle("is-visible", state.payPromptVisible);
   elements.playerLockCard.classList.toggle("is-unlocked", state.unlocked);
   elements.playerLockCard.setAttribute("aria-hidden", String(!state.payPromptVisible));

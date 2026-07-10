@@ -87,6 +87,21 @@ img {
   touch-action: none;
 }
 
+.video-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: rgba(0, 0, 0, 0.58);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.video-stage.has-pay-prompt::before {
+  opacity: 1;
+}
+
 .video-rail {
   position: absolute;
   inset: 0;
@@ -263,27 +278,29 @@ img {
 }
 
 .player-lock-card {
-  left: 14px;
-  right: 14px;
-  bottom: 14px;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  width: min(360px, calc(100% - 42px));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  padding: 14px;
+  padding: 18px;
   border: 1px solid rgba(215, 173, 87, 0.36);
   border-radius: var(--radius);
-  background: rgba(17, 23, 22, 0.86);
+  background: rgba(17, 23, 22, 0.94);
   backdrop-filter: blur(18px);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
   opacity: 0;
   pointer-events: none;
-  transform: translateY(22px) scale(0.98);
+  transform: translate(-50%, calc(-50% + 24px)) scale(0.98);
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
 .player-lock-card.is-visible {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0) scale(1);
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .player-lock-card p {
