@@ -87,25 +87,10 @@ img {
   touch-action: none;
 }
 
-.video-stage::before {
-  content: "";
+.video-rail,
+.prompt-rail {
   position: absolute;
   inset: 0;
-  z-index: 3;
-  background: rgba(0, 0, 0, 0.58);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 180ms ease;
-}
-
-.video-stage.has-pay-prompt::before {
-  opacity: 1;
-}
-
-.video-rail {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -114,16 +99,45 @@ img {
   will-change: transform;
 }
 
-.video-rail.is-dragging {
+.video-rail {
+  z-index: 0;
+}
+
+.prompt-rail {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.video-rail.is-dragging,
+.prompt-rail.is-dragging {
   transition: none;
 }
 
-.video-slide {
+.video-slide,
+.prompt-slide {
   position: relative;
   flex: 0 0 100%;
   min-height: 100%;
+}
+
+.video-slide {
   overflow: hidden;
   background: #080a09;
+}
+
+.prompt-slide::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.58);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.prompt-slide.has-pay-prompt::before {
+  opacity: 1;
 }
 
 .drama-video {
@@ -280,7 +294,7 @@ img {
 .player-lock-card {
   left: 50%;
   top: 50%;
-  z-index: 4;
+  z-index: 2;
   width: min(360px, calc(100% - 42px));
   display: grid;
   grid-template-columns: minmax(0, 1fr);

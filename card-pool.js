@@ -166,6 +166,7 @@ const state = {
   currentVideo: 0,
   paymentMode: "pool",
   payPromptVisible: false,
+  payPromptVideo: null,
   paying: false,
   currentEpisode: 3,
   saved: false,
@@ -185,8 +186,10 @@ const elements = {
   profileView: document.getElementById("profile-view"),
   videoStage: document.querySelector(".video-stage"),
   videoRail: document.getElementById("video-rail"),
+  promptRail: document.getElementById("prompt-rail"),
   dramaVideos: document.querySelectorAll(".drama-video"),
   videoSlides: document.querySelectorAll(".video-slide"),
+  promptSlides: document.querySelectorAll(".prompt-slide"),
   videoProgress: document.getElementById("video-progress"),
   muteButton: document.getElementById("mute-button"),
   saveButton: document.getElementById("save-button"),
@@ -407,16 +410,14 @@ function renderView() {
 function renderPlayer() {
   const video = videoOptions[state.currentVideo];
   renderVideoSlides();
+  renderPromptSlides();
   syncVideoRail(state.isDraggingVideo ? state.touchDeltaY : 0);
   elements.episodeTitle.textContent = `第 ${state.currentEpisode} 集`;
   elements.episodeMeta.textContent = `${video.label} · 短剧 · 现代 · 第 ${state.currentEpisode} 集`;
   elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
   elements.saveButton.classList.toggle("is-active", state.saved);
   elements.likeButton.classList.toggle("is-active", state.liked);
-  elements.videoStage.classList.toggle("has-pay-prompt", state.payPromptVisible);
-  elements.playerLockCard.classList.toggle("is-visible", state.payPromptVisible);
   elements.playerLockCard.classList.toggle("is-unlocked", state.unlocked);
-  elements.playerLockCard.setAttribute("aria-hidden", String(!state.payPromptVisible));
   elements.playerPayButton.textContent = state.unlocked ? "去抽卡" : "¥18 解锁";
   elements.morePayButton.textContent = state.unlocked ? "付费抽取一次" : "付费解锁内容";
 
@@ -674,6 +675,17 @@ function getActiveVideo() {
   return elements.dramaVideos[state.currentVideo];
 }
 
+function getPayPromptVideo() {
+  if (!state.payPromptVisible || state.payPromptVideo === null) {
+    return null;
+  }
+  return state.payPromptVideo;
+}
+
+function isActivePayPromptVisible() {
+  return getPayPromptVideo() === state.currentVideo;
+}
+
 function renderVideoSlides() {
   elements.videoSlides.forEach((slide, index) => {
     const isActive = index === state.currentVideo;
@@ -690,8 +702,27 @@ function renderVideoSlides() {
   elements.muteButton.classList.toggle("is-active", !state.videoMuted);
 }
 
+function renderPromptSlides() {
+  const promptVideo = getPayPromptVideo();
+  elements.promptSlides.forEach((slide, index) => {
+    const hasPrompt = index === promptVideo;
+    slide.classList.toggle("has-pay-prompt", hasPrompt);
+    slide.setAttribute("aria-hidden", String(!hasPrompt));
+  });
+
+  const promptSlide = promptVideo === null ? null : elements.promptSlides[promptVideo];
+  if (promptSlide && elements.playerLockCard.parentElement !== promptSlide) {
+    promptSlide.appendChild(elements.playerLockCard);
+  }
+
+  elements.playerLockCard.classList.toggle("is-visible", promptVideo !== null);
+  elements.playerLockCard.setAttribute("aria-hidden", String(promptVideo === null));
+}
+
 function syncVideoRail(offset = 0) {
-  elements.videoRail.style.transform = `translate3d(0, calc(${-state.currentVideo * 100}% + ${Math.round(offset)}px), 0)`;
+  const transform = `translate3d(0, calc(${-state.currentVideo * 100}% + ${Math.round(offset)}px), 0)`;
+  elements.videoRail.style.transform = transform;
+  elements.promptRail.style.transform = transform;
 }
 
 function pauseAllVideos() {
@@ -700,7 +731,7 @@ function pauseAllVideos() {
 
 function playActiveVideo() {
   const activeVideo = getActiveVideo();
-  if (!activeVideo || state.view !== "player" || state.payPromptVisible) {
+  if (!activeVideo || state.view !== "player" || isActivePayPromptVisible()) {
     return;
   }
 
@@ -726,7 +757,7 @@ function setView(view) {
   state.view = view;
   renderView();
   if (view === "player") {
-    if (state.payPromptVisible) {
+    if (isActivePayPromptVisible()) {
       pauseAllVideos();
       return;
     }
@@ -773,7 +804,7 @@ function closeMoreSheet() {
 }
 
 function toggleVideoPlayback() {
-  if (state.payPromptVisible) {
+  if (isActivePayPromptVisible()) {
     return;
   }
 
@@ -800,6 +831,7 @@ function handleVideoTouchStart(event) {
   state.touchDeltaY = 0;
   state.isDraggingVideo = true;
   elements.videoRail.classList.add("is-dragging");
+  elements.promptRail.classList.add("is-dragging");
 }
 
 function handleVideoTouchMove(event) {
@@ -835,6 +867,7 @@ function handleVideoTouchEnd(event) {
   state.touchDeltaY = 0;
   state.isDraggingVideo = false;
   elements.videoRail.classList.remove("is-dragging");
+  elements.promptRail.classList.remove("is-dragging");
 
   if (Math.abs(swipeY) < 54 || Math.abs(swipeY) < Math.abs(deltaX) * 1.2) {
     syncVideoRail();
@@ -850,6 +883,7 @@ function handleVideoTouchCancel() {
   state.touchDeltaY = 0;
   state.isDraggingVideo = false;
   elements.videoRail.classList.remove("is-dragging");
+  elements.promptRail.classList.remove("is-dragging");
   syncVideoRail();
 }
 
@@ -890,10 +924,10 @@ function switchVideo(index) {
   resetVideo(previousVideo);
   state.currentVideo = index;
   state.speedIndex = 0;
-  state.payPromptVisible = false;
   state.touchDeltaY = 0;
   state.isDraggingVideo = false;
   elements.videoRail.classList.remove("is-dragging");
+  elements.promptRail.classList.remove("is-dragging");
   pauseAllVideos();
   elements.videoProgress.value = "0";
   elements.speedButton.textContent = "Speed";
@@ -909,6 +943,7 @@ function handleVideoEnded(event) {
   }
 
   state.payPromptVisible = true;
+  state.payPromptVideo = state.currentVideo;
   pauseAllVideos();
   elements.videoProgress.value = "100";
   renderPlayer();
@@ -1050,6 +1085,7 @@ function resetDemo() {
   state.view = "player";
   state.currentVideo = 0;
   state.payPromptVisible = false;
+  state.payPromptVideo = null;
   state.currentEpisode = 3;
   state.saved = false;
   state.liked = false;
@@ -1061,6 +1097,7 @@ function resetDemo() {
   elements.likeButton.querySelector("span").textContent = "♡";
   elements.dramaVideos.forEach(resetVideo);
   elements.videoRail.classList.remove("is-dragging");
+  elements.promptRail.classList.remove("is-dragging");
   elements.speedButton.textContent = "Speed";
   render();
   playActiveVideo();
