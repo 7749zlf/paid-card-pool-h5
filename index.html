@@ -14,15 +14,39 @@
     <section class="phone-shell" aria-label="付费解锁卡池">
       <section class="screen-view player-view" id="player-view" aria-label="短剧播放页">
         <div class="video-stage">
-          <video
-            id="drama-video"
-            class="drama-video"
-            src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-            poster="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
-            autoplay
-            muted
-            playsinline
-          ></video>
+          <div class="video-rail" id="video-rail">
+            <section class="video-slide is-active" aria-label="视频 1">
+              <video
+                class="drama-video"
+                src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+                poster="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
+                autoplay
+                muted
+                playsinline
+                preload="auto"
+              ></video>
+            </section>
+            <section class="video-slide" aria-label="视频 2">
+              <video
+                class="drama-video"
+                src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+                poster="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
+                muted
+                playsinline
+                preload="metadata"
+              ></video>
+            </section>
+            <section class="video-slide" aria-label="视频 3">
+              <video
+                class="drama-video"
+                src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+                poster="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
+                muted
+                playsinline
+                preload="metadata"
+              ></video>
+            </section>
+          </div>
 
           <div class="video-shade" aria-hidden="true"></div>
 

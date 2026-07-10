@@ -170,9 +170,12 @@ const state = {
   currentEpisode: 3,
   saved: false,
   liked: false,
+  videoMuted: true,
   speedIndex: 0,
   touchStartY: 0,
   touchStartX: 0,
+  touchDeltaY: 0,
+  isDraggingVideo: false,
   wheelLocked: false
 };
 
@@ -181,7 +184,9 @@ const elements = {
   poolView: document.getElementById("pool-view"),
   profileView: document.getElementById("profile-view"),
   videoStage: document.querySelector(".video-stage"),
-  dramaVideo: document.getElementById("drama-video"),
+  videoRail: document.getElementById("video-rail"),
+  dramaVideos: document.querySelectorAll(".drama-video"),
+  videoSlides: document.querySelectorAll(".video-slide"),
   videoProgress: document.getElementById("video-progress"),
   muteButton: document.getElementById("mute-button"),
   saveButton: document.getElementById("save-button"),
@@ -316,11 +321,15 @@ elements.profileConsumptionRecordButton.addEventListener("click", () => {
 });
 
 elements.videoStage.addEventListener("touchstart", handleVideoTouchStart, { passive: true });
+elements.videoStage.addEventListener("touchmove", handleVideoTouchMove, { passive: false });
 elements.videoStage.addEventListener("touchend", handleVideoTouchEnd);
+elements.videoStage.addEventListener("touchcancel", handleVideoTouchCancel);
 elements.videoStage.addEventListener("wheel", handleVideoWheel, { passive: false });
-elements.dramaVideo.addEventListener("click", toggleVideoPlayback);
-elements.dramaVideo.addEventListener("timeupdate", syncVideoProgress);
-elements.dramaVideo.addEventListener("ended", handleVideoEnded);
+elements.dramaVideos.forEach((video) => {
+  video.addEventListener("click", toggleVideoPlayback);
+  video.addEventListener("timeupdate", syncVideoProgress);
+  video.addEventListener("ended", handleVideoEnded);
+});
 elements.videoProgress.addEventListener("input", seekVideo);
 
 document.querySelectorAll(".tab-button").forEach((button) => {
@@ -390,10 +399,15 @@ function renderView() {
   elements.playerView.hidden = state.view !== "player";
   elements.poolView.hidden = state.view !== "pool";
   elements.profileView.hidden = state.view !== "profile";
+  if (state.view !== "player") {
+    pauseAllVideos();
+  }
 }
 
 function renderPlayer() {
   const video = videoOptions[state.currentVideo];
+  renderVideoSlides();
+  syncVideoRail(state.isDraggingVideo ? state.touchDeltaY : 0);
   elements.episodeTitle.textContent = `第 ${state.currentEpisode} 集`;
   elements.episodeMeta.textContent = `${video.label} · 短剧 · 现代 · 第 ${state.currentEpisode} 集`;
   elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
@@ -655,15 +669,67 @@ function confirmPayment() {
   }, 900);
 }
 
+function getActiveVideo() {
+  return elements.dramaVideos[state.currentVideo];
+}
+
+function renderVideoSlides() {
+  elements.videoSlides.forEach((slide, index) => {
+    const isActive = index === state.currentVideo;
+    slide.classList.toggle("is-active", isActive);
+    slide.setAttribute("aria-hidden", String(!isActive));
+  });
+
+  elements.dramaVideos.forEach((video, index) => {
+    video.muted = state.videoMuted;
+    video.tabIndex = index === state.currentVideo ? 0 : -1;
+  });
+
+  elements.muteButton.querySelector("span").textContent = state.videoMuted ? "🔇" : "🔈";
+  elements.muteButton.classList.toggle("is-active", !state.videoMuted);
+}
+
+function syncVideoRail(offset = 0) {
+  elements.videoRail.style.transform = `translate3d(0, calc(${-state.currentVideo * 100}% + ${Math.round(offset)}px), 0)`;
+}
+
+function pauseAllVideos() {
+  elements.dramaVideos.forEach((video) => video.pause());
+}
+
+function playActiveVideo() {
+  const activeVideo = getActiveVideo();
+  if (!activeVideo || state.view !== "player" || state.payPromptVisible) {
+    return;
+  }
+
+  activeVideo.playbackRate = playbackSpeeds[state.speedIndex];
+  activeVideo.play().catch(() => {});
+}
+
+function resetVideo(video) {
+  if (!video) {
+    return;
+  }
+
+  video.pause();
+  video.playbackRate = 1;
+  try {
+    video.currentTime = 0;
+  } catch {
+    // Some browsers block seeking before metadata is ready.
+  }
+}
+
 function setView(view) {
   state.view = view;
   renderView();
   if (view === "player") {
     if (state.payPromptVisible) {
-      elements.dramaVideo.pause();
+      pauseAllVideos();
       return;
     }
-    elements.dramaVideo.play().catch(() => {});
+    playActiveVideo();
   }
 }
 
@@ -710,11 +776,16 @@ function toggleVideoPlayback() {
     return;
   }
 
-  if (elements.dramaVideo.paused) {
-    elements.dramaVideo.play().catch(() => {});
+  const activeVideo = getActiveVideo();
+  if (!activeVideo) {
     return;
   }
-  elements.dramaVideo.pause();
+
+  if (activeVideo.paused) {
+    playActiveVideo();
+    return;
+  }
+  activeVideo.pause();
 }
 
 function handleVideoTouchStart(event) {
@@ -725,24 +796,60 @@ function handleVideoTouchStart(event) {
   const touch = event.changedTouches[0];
   state.touchStartY = touch.clientY;
   state.touchStartX = touch.clientX;
+  state.touchDeltaY = 0;
+  state.isDraggingVideo = true;
+  elements.videoRail.classList.add("is-dragging");
+}
+
+function handleVideoTouchMove(event) {
+  if (!state.isDraggingVideo || !state.touchStartY) {
+    return;
+  }
+
+  const touch = event.touches[0];
+  const deltaY = touch.clientY - state.touchStartY;
+  const deltaX = touch.clientX - state.touchStartX;
+
+  if (Math.abs(deltaY) < 8 || Math.abs(deltaY) < Math.abs(deltaX) * 1.15) {
+    return;
+  }
+
+  event.preventDefault();
+  const draggingPastFirst = state.currentVideo === 0 && deltaY > 0;
+  const draggingPastLast = state.currentVideo === videoOptions.length - 1 && deltaY < 0;
+  state.touchDeltaY = draggingPastFirst || draggingPastLast ? deltaY * 0.28 : deltaY;
+  syncVideoRail(state.touchDeltaY);
 }
 
 function handleVideoTouchEnd(event) {
-  if (isInteractiveTarget(event.target) || !state.touchStartY) {
+  if (!state.isDraggingVideo || !state.touchStartY) {
     return;
   }
 
   const touch = event.changedTouches[0];
-  const deltaY = state.touchStartY - touch.clientY;
+  const swipeY = state.touchStartY - touch.clientY;
   const deltaX = state.touchStartX - touch.clientX;
   state.touchStartY = 0;
   state.touchStartX = 0;
+  state.touchDeltaY = 0;
+  state.isDraggingVideo = false;
+  elements.videoRail.classList.remove("is-dragging");
 
-  if (Math.abs(deltaY) < 54 || Math.abs(deltaY) < Math.abs(deltaX) * 1.2) {
+  if (Math.abs(swipeY) < 54 || Math.abs(swipeY) < Math.abs(deltaX) * 1.2) {
+    syncVideoRail();
     return;
   }
 
-  switchVideoByStep(deltaY > 0 ? 1 : -1);
+  switchVideoByStep(swipeY > 0 ? 1 : -1);
+}
+
+function handleVideoTouchCancel() {
+  state.touchStartY = 0;
+  state.touchStartX = 0;
+  state.touchDeltaY = 0;
+  state.isDraggingVideo = false;
+  elements.videoRail.classList.remove("is-dragging");
+  syncVideoRail();
 }
 
 function handleVideoWheel(event) {
@@ -765,9 +872,12 @@ function handleVideoWheel(event) {
 function switchVideoByStep(step) {
   const nextIndex = state.currentVideo + step;
   if (nextIndex < 0 || nextIndex >= videoOptions.length) {
-    return;
+    syncVideoRail();
+    showToast(step > 0 ? "已经是最后一个视频" : "已经是第一个视频");
+    return false;
   }
   switchVideo(nextIndex);
+  return true;
 }
 
 function switchVideo(index) {
@@ -775,25 +885,30 @@ function switchVideo(index) {
     return;
   }
 
-  const nextVideo = videoOptions[index];
+  const previousVideo = getActiveVideo();
+  resetVideo(previousVideo);
   state.currentVideo = index;
   state.speedIndex = 0;
   state.payPromptVisible = false;
-  elements.dramaVideo.pause();
-  elements.dramaVideo.src = nextVideo.src;
-  elements.dramaVideo.poster = nextVideo.poster;
-  elements.dramaVideo.currentTime = 0;
-  elements.dramaVideo.playbackRate = 1;
+  state.touchDeltaY = 0;
+  state.isDraggingVideo = false;
+  elements.videoRail.classList.remove("is-dragging");
+  pauseAllVideos();
   elements.videoProgress.value = "0";
   elements.speedButton.textContent = "Speed";
-  elements.dramaVideo.load();
-  elements.dramaVideo.play().catch(() => {});
+  resetVideo(getActiveVideo());
+  syncVideoRail();
   renderPlayer();
+  playActiveVideo();
 }
 
-function handleVideoEnded() {
+function handleVideoEnded(event) {
+  if (event.target !== getActiveVideo()) {
+    return;
+  }
+
   state.payPromptVisible = true;
-  elements.dramaVideo.pause();
+  pauseAllVideos();
   elements.videoProgress.value = "100";
   renderPlayer();
 }
@@ -803,9 +918,8 @@ function isInteractiveTarget(target) {
 }
 
 function toggleMute() {
-  elements.dramaVideo.muted = !elements.dramaVideo.muted;
-  elements.muteButton.querySelector("span").textContent = elements.dramaVideo.muted ? "🔇" : "🔈";
-  elements.muteButton.classList.toggle("is-active", !elements.dramaVideo.muted);
+  state.videoMuted = !state.videoMuted;
+  renderVideoSlides();
 }
 
 function toggleSave() {
@@ -825,22 +939,31 @@ function toggleLike() {
 function cycleSpeed() {
   state.speedIndex = (state.speedIndex + 1) % playbackSpeeds.length;
   const speed = playbackSpeeds[state.speedIndex];
-  elements.dramaVideo.playbackRate = speed;
+  const activeVideo = getActiveVideo();
+  if (activeVideo) {
+    activeVideo.playbackRate = speed;
+  }
   elements.speedButton.textContent = speed === 1 ? "Speed" : `${speed}x`;
 }
 
-function syncVideoProgress() {
-  if (!Number.isFinite(elements.dramaVideo.duration) || !elements.dramaVideo.duration) {
+function syncVideoProgress(event) {
+  const activeVideo = getActiveVideo();
+  if (event && event.target !== activeVideo) {
     return;
   }
-  elements.videoProgress.value = String((elements.dramaVideo.currentTime / elements.dramaVideo.duration) * 100);
+
+  if (!activeVideo || !Number.isFinite(activeVideo.duration) || !activeVideo.duration) {
+    return;
+  }
+  elements.videoProgress.value = String((activeVideo.currentTime / activeVideo.duration) * 100);
 }
 
 function seekVideo() {
-  if (!Number.isFinite(elements.dramaVideo.duration) || !elements.dramaVideo.duration) {
+  const activeVideo = getActiveVideo();
+  if (!activeVideo || !Number.isFinite(activeVideo.duration) || !activeVideo.duration) {
     return;
   }
-  elements.dramaVideo.currentTime = (Number(elements.videoProgress.value) / 100) * elements.dramaVideo.duration;
+  activeVideo.currentTime = (Number(elements.videoProgress.value) / 100) * activeVideo.duration;
 }
 
 function drawCard() {
@@ -929,15 +1052,17 @@ function resetDemo() {
   state.currentEpisode = 3;
   state.saved = false;
   state.liked = false;
+  state.videoMuted = true;
   state.speedIndex = 0;
+  state.touchDeltaY = 0;
+  state.isDraggingVideo = false;
   elements.saveButton.querySelector("span").textContent = "☆";
   elements.likeButton.querySelector("span").textContent = "♡";
-  elements.dramaVideo.muted = true;
-  elements.dramaVideo.playbackRate = 1;
-  elements.muteButton.querySelector("span").textContent = "🔇";
-  elements.muteButton.classList.remove("is-active");
+  elements.dramaVideos.forEach(resetVideo);
+  elements.videoRail.classList.remove("is-dragging");
   elements.speedButton.textContent = "Speed";
   render();
+  playActiveVideo();
   showToast("已重置为未解锁状态");
 }
 
