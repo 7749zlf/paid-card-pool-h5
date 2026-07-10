@@ -165,6 +165,7 @@ const state = {
   previousView: "player",
   currentVideo: 0,
   paymentMode: "pool",
+  payPromptVisible: false,
   paying: false,
   currentEpisode: 3,
   saved: false,
@@ -319,6 +320,7 @@ elements.videoStage.addEventListener("touchend", handleVideoTouchEnd);
 elements.videoStage.addEventListener("wheel", handleVideoWheel, { passive: false });
 elements.dramaVideo.addEventListener("click", toggleVideoPlayback);
 elements.dramaVideo.addEventListener("timeupdate", syncVideoProgress);
+elements.dramaVideo.addEventListener("ended", handleVideoEnded);
 elements.videoProgress.addEventListener("input", seekVideo);
 
 document.querySelectorAll(".tab-button").forEach((button) => {
@@ -397,7 +399,9 @@ function renderPlayer() {
   elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
   elements.saveButton.classList.toggle("is-active", state.saved);
   elements.likeButton.classList.toggle("is-active", state.liked);
+  elements.playerLockCard.classList.toggle("is-visible", state.payPromptVisible);
   elements.playerLockCard.classList.toggle("is-unlocked", state.unlocked);
+  elements.playerLockCard.setAttribute("aria-hidden", String(!state.payPromptVisible));
   elements.playerPayButton.textContent = state.unlocked ? "去抽卡" : "¥18 解锁";
   elements.morePayButton.textContent = state.unlocked ? "付费抽取一次" : "付费解锁内容";
 
@@ -655,6 +659,10 @@ function setView(view) {
   state.view = view;
   renderView();
   if (view === "player") {
+    if (state.payPromptVisible) {
+      elements.dramaVideo.pause();
+      return;
+    }
     elements.dramaVideo.play().catch(() => {});
   }
 }
@@ -698,6 +706,10 @@ function closeMoreSheet() {
 }
 
 function toggleVideoPlayback() {
+  if (state.payPromptVisible) {
+    return;
+  }
+
   if (elements.dramaVideo.paused) {
     elements.dramaVideo.play().catch(() => {});
     return;
@@ -766,6 +778,7 @@ function switchVideo(index) {
   const nextVideo = videoOptions[index];
   state.currentVideo = index;
   state.speedIndex = 0;
+  state.payPromptVisible = false;
   elements.dramaVideo.pause();
   elements.dramaVideo.src = nextVideo.src;
   elements.dramaVideo.poster = nextVideo.poster;
@@ -775,6 +788,13 @@ function switchVideo(index) {
   elements.speedButton.textContent = "Speed";
   elements.dramaVideo.load();
   elements.dramaVideo.play().catch(() => {});
+  renderPlayer();
+}
+
+function handleVideoEnded() {
+  state.payPromptVisible = true;
+  elements.dramaVideo.pause();
+  elements.videoProgress.value = "100";
   renderPlayer();
 }
 
@@ -905,6 +925,7 @@ function resetDemo() {
   state.activeTab = "pool";
   state.view = "player";
   state.currentVideo = 0;
+  state.payPromptVisible = false;
   state.currentEpisode = 3;
   state.saved = false;
   state.liked = false;

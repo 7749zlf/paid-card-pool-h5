@@ -250,6 +250,16 @@ img {
   border-radius: var(--radius);
   background: rgba(17, 23, 22, 0.86);
   backdrop-filter: blur(18px);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(22px) scale(0.98);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.player-lock-card.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
 .player-lock-card p {
