@@ -106,7 +106,7 @@
         <div class="cover-copy">
           <p>SSR 限定</p>
           <h2 id="pool-title">朝花夕遇卡池</h2>
-          <span>12 张限定卡面 · 解锁后永久可看</span>
+          <span>12 张限定卡面 · 每次付费随机解锁</span>
         </div>
       </section>
 
@@ -114,7 +114,7 @@
         <div class="unlock-copy">
           <p>付费内容</p>
           <h2 id="locked-title">解锁完整卡池</h2>
-          <span>包含卡面、掉率、卡牌详情和抽取记录。</span>
+          <span>开放卡池入口，抽取内容需按次支付。</span>
         </div>
         <button class="pay-button" id="open-pay-button" type="button">
           <span>¥18.00</span>
@@ -272,12 +272,12 @@
 
       <div class="checkout-summary">
         <div>
-          <span>卡池内容</span>
-          <strong>12 张限定卡面</strong>
+          <span id="payment-item-label">卡池内容</span>
+          <strong id="payment-item-value">12 张限定卡面</strong>
         </div>
         <div>
           <span>支付金额</span>
-          <strong>¥18.00</strong>
+          <strong id="payment-amount">¥18.00</strong>
         </div>
       </div>
 
@@ -308,7 +308,7 @@
 
       <label class="agree-row">
         <input id="agree-checkbox" type="checkbox" checked>
-        <span>支付后立即解锁，解锁状态将保存在当前浏览器。</span>
+        <span id="payment-rule">支付后立即解锁，解锁状态将保存在当前浏览器。</span>
       </label>
 
       <button class="confirm-button" id="confirm-pay-button" type="button">

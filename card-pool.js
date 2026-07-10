@@ -3,6 +3,29 @@ const orderKey = "paid-card-pool-order";
 const historyKey = "paid-card-pool-history";
 const unlockedCardsKey = "paid-card-pool-unlocked-cards";
 
+const paymentConfig = {
+  pool: {
+    title: "解锁朝花夕遇卡池",
+    itemLabel: "卡池入口",
+    itemValue: "开放抽取权限",
+    amount: "¥18.00",
+    buttonText: "确认支付并解锁",
+    loadingText: "正在创建订单",
+    rule: "支付后开放卡池入口，之后每次抽取仍需单独付费。",
+    orderTitle: "卡池入口解锁"
+  },
+  draw: {
+    title: "付费抽取一次",
+    itemLabel: "抽取内容",
+    itemValue: "随机解锁 1 个未解锁内容",
+    amount: "¥6.00",
+    buttonText: "确认支付并抽取",
+    loadingText: "正在创建抽取订单",
+    rule: "每次支付成功后随机解锁 1 个未解锁内容。",
+    orderTitle: "单次抽取"
+  }
+};
+
 const cards = [
   {
     id: "ssr-01",
@@ -141,6 +164,7 @@ const state = {
   view: "player",
   previousView: "player",
   currentVideo: 0,
+  paymentMode: "pool",
   paying: false,
   currentEpisode: 3,
   saved: false,
@@ -181,6 +205,11 @@ const elements = {
   closePayButton: document.getElementById("close-pay-button"),
   confirmPayButton: document.getElementById("confirm-pay-button"),
   payButtonText: document.getElementById("pay-button-text"),
+  paymentTitle: document.getElementById("payment-title"),
+  paymentItemLabel: document.getElementById("payment-item-label"),
+  paymentItemValue: document.getElementById("payment-item-value"),
+  paymentAmount: document.getElementById("payment-amount"),
+  paymentRule: document.getElementById("payment-rule"),
   agreeCheckbox: document.getElementById("agree-checkbox"),
   paymentSheet: document.getElementById("payment-sheet"),
   cardGrid: document.getElementById("card-grid"),
@@ -221,7 +250,7 @@ const elements = {
 
 const playbackSpeeds = [1, 1.25, 1.5, 2];
 
-elements.openPayButton.addEventListener("click", openPaymentSheet);
+elements.openPayButton.addEventListener("click", () => openPaymentSheet("pool"));
 elements.playerPayButton.addEventListener("click", handlePlayerPay);
 elements.goPoolButton.addEventListener("click", () => setView("pool"));
 elements.openProfileButton.addEventListener("click", openProfile);
@@ -251,7 +280,7 @@ elements.morePoolButton.addEventListener("click", () => {
 });
 elements.morePayButton.addEventListener("click", () => {
   closeMoreSheet();
-  openPaymentSheet();
+  openPaymentSheet(state.unlocked ? "draw" : "pool");
 });
 
 elements.linkEmailButton.addEventListener("click", () => {
@@ -344,14 +373,14 @@ function render() {
 function renderPoolStatus() {
   if (!state.unlocked) {
     elements.poolUnlockTitle.textContent = "卡池已开放";
-    elements.drawButton.textContent = "抽取一次";
+    elements.drawButton.textContent = "先解锁卡池";
     elements.drawButton.disabled = false;
     return;
   }
 
   const unlockedCount = state.unlockedCards.length;
   elements.poolUnlockTitle.textContent = `已解锁 ${unlockedCount}/${cards.length} 个内容`;
-  elements.drawButton.textContent = unlockedCount >= cards.length ? "已全部解锁" : "抽取一次";
+  elements.drawButton.textContent = unlockedCount >= cards.length ? "已全部解锁" : "¥6 抽取一次";
   elements.drawButton.disabled = unlockedCount >= cards.length;
 }
 
@@ -370,12 +399,13 @@ function renderPlayer() {
   elements.likeButton.classList.toggle("is-active", state.liked);
   elements.playerLockCard.classList.toggle("is-unlocked", state.unlocked);
   elements.playerPayButton.textContent = state.unlocked ? "去抽卡" : "¥18 解锁";
+  elements.morePayButton.textContent = state.unlocked ? "付费抽取一次" : "付费解锁内容";
 
   const lockTitle = elements.playerLockCard.querySelector("h2");
   const lockText = elements.playerLockCard.querySelector("span");
   if (state.unlocked) {
     lockTitle.textContent = "限定卡池已开放";
-    lockText.textContent = "每次抽取会随机解锁 1 个未解锁内容。";
+    lockText.textContent = "每次抽取都需要单独付费，支付后随机解锁 1 个内容。";
   } else {
     lockTitle.textContent = "解锁限定卡池内容";
     lockText.textContent = "继续观看专属片段，并查看 12 张限定卡面。";
@@ -416,11 +446,11 @@ function renderCards() {
     button.addEventListener("click", () => {
       const card = cards.find((item) => item.id === button.dataset.cardId);
       if (!state.unlocked) {
-        openPaymentSheet();
+        openPaymentSheet("pool");
         return;
       }
       if (!state.unlockedCards.includes(card.id)) {
-        showToast("该内容尚未抽到，点击抽取一次随机解锁");
+        openPaymentSheet("draw");
         return;
       }
       openCardDetail(card);
@@ -481,10 +511,10 @@ function renderOrder() {
   }
 
   elements.orderCard.innerHTML = `
-    <strong>卡池已解锁</strong>
+    <strong>${state.order.title || "卡池已解锁"}</strong>
     <span>订单号：${state.order.id}</span>
     <span>支付方式：${state.order.method}</span>
-    <span>支付金额：¥18.00</span>
+    <span>支付金额：${state.order.amount || "¥18.00"}</span>
     <span>完成时间：${formatTime(state.order.time)}</span>
   `;
 }
@@ -507,7 +537,7 @@ function renderEpisodes() {
       const episode = Number(button.dataset.episode);
       if (episode > 3 && !state.unlocked) {
         closeEpisodeSheet();
-        openPaymentSheet();
+        openPaymentSheet("pool");
         return;
       }
       state.currentEpisode = episode;
@@ -529,12 +559,25 @@ function renderTabs() {
   });
 }
 
-function openPaymentSheet() {
-  if (state.unlocked) {
-    showToast("卡池已解锁");
+function openPaymentSheet(mode = "pool") {
+  if (mode === "pool" && state.unlocked) {
     setView("pool");
+    state.activeTab = "pool";
+    renderTabs();
     return;
   }
+
+  if (mode === "draw" && !state.unlocked) {
+    mode = "pool";
+  }
+
+  if (mode === "draw" && !pickLockedCard()) {
+    showToast("所有内容都已解锁");
+    return;
+  }
+
+  state.paymentMode = mode;
+  renderPaymentSheet();
   elements.paymentSheet.hidden = false;
 }
 
@@ -543,6 +586,16 @@ function closePaymentSheet() {
     return;
   }
   elements.paymentSheet.hidden = true;
+}
+
+function renderPaymentSheet() {
+  const config = paymentConfig[state.paymentMode] || paymentConfig.pool;
+  elements.paymentTitle.textContent = config.title;
+  elements.paymentItemLabel.textContent = config.itemLabel;
+  elements.paymentItemValue.textContent = config.itemValue;
+  elements.paymentAmount.textContent = config.amount;
+  elements.paymentRule.textContent = config.rule;
+  elements.payButtonText.textContent = config.buttonText;
 }
 
 function confirmPayment() {
@@ -558,28 +611,43 @@ function confirmPayment() {
   state.paying = true;
   elements.confirmPayButton.classList.add("is-loading");
   elements.confirmPayButton.disabled = true;
-  elements.payButtonText.textContent = "正在创建订单";
+  const config = paymentConfig[state.paymentMode] || paymentConfig.pool;
+  elements.payButtonText.textContent = config.loadingText;
 
   window.setTimeout(() => {
     const methodInput = document.querySelector("input[name='pay-method']:checked");
     state.order = {
       id: createOrderId(),
       method: getMethodLabel(methodInput.value),
+      title: config.orderTitle,
+      amount: config.amount,
       time: Date.now()
     };
-    state.unlocked = true;
-    localStorage.setItem(unlockKey, "true");
+
+    let unlockedCard = null;
+    if (state.paymentMode === "draw") {
+      unlockedCard = unlockRandomCard();
+    } else {
+      state.unlocked = true;
+      localStorage.setItem(unlockKey, "true");
+    }
+
     localStorage.setItem(orderKey, JSON.stringify(state.order));
 
     state.paying = false;
     elements.confirmPayButton.classList.remove("is-loading");
     elements.confirmPayButton.disabled = false;
-    elements.payButtonText.textContent = "确认支付并解锁";
+    elements.payButtonText.textContent = config.buttonText;
     elements.paymentSheet.hidden = true;
     state.view = "pool";
     state.activeTab = "pool";
     render();
-    showToast("支付成功，卡池已解锁");
+    if (unlockedCard) {
+      openCardDetail(unlockedCard);
+      showToast("支付成功，已随机解锁 1 个内容");
+    } else {
+      showToast("支付成功，卡池已开放");
+    }
   }, 900);
 }
 
@@ -609,7 +677,7 @@ function handlePlayerPay() {
     renderTabs();
     return;
   }
-  openPaymentSheet();
+  openPaymentSheet("pool");
 }
 
 function openEpisodeSheet() {
@@ -757,27 +825,29 @@ function seekVideo() {
 
 function drawCard() {
   if (!state.unlocked) {
-    openPaymentSheet();
+    openPaymentSheet("pool");
     return;
   }
 
+  openPaymentSheet("draw");
+}
+
+function unlockRandomCard() {
   const card = pickLockedCard();
   if (!card) {
-    showToast("所有内容都已解锁");
-    return;
+    return null;
   }
 
   state.unlockedCards.unshift(card.id);
   localStorage.setItem(unlockedCardsKey, JSON.stringify(state.unlockedCards));
   state.history.unshift({
     cardId: card.id,
-    method: "随机解锁",
+    method: "付费抽取",
     time: Date.now()
   });
   state.history = state.history.slice(0, 20);
   localStorage.setItem(historyKey, JSON.stringify(state.history));
-  render();
-  openCardDetail(card);
+  return card;
 }
 
 function pickLockedCard() {
