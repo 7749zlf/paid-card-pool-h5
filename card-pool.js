@@ -95,12 +95,31 @@ const cards = [
   }
 ];
 
+const videoOptions = [
+  {
+    label: "视频 1",
+    src: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    poster: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
+  },
+  {
+    label: "视频 2",
+    src: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    poster: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
+  },
+  {
+    label: "视频 3",
+    src: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+    poster: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82"
+  }
+];
+
 const state = {
   unlocked: localStorage.getItem(unlockKey) === "true",
   order: readJson(orderKey, null),
   history: readJson(historyKey, []),
   activeTab: "pool",
   view: "player",
+  currentVideo: 0,
   paying: false,
   currentEpisode: 3,
   saved: false,
@@ -112,6 +131,7 @@ const elements = {
   playerView: document.getElementById("player-view"),
   poolView: document.getElementById("pool-view"),
   dramaVideo: document.getElementById("drama-video"),
+  videoButtons: document.querySelectorAll(".video-switch-button"),
   videoProgress: document.getElementById("video-progress"),
   muteButton: document.getElementById("mute-button"),
   saveButton: document.getElementById("save-button"),
@@ -186,6 +206,12 @@ elements.morePayButton.addEventListener("click", () => {
   openPaymentSheet();
 });
 
+elements.videoButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    switchVideo(Number(button.dataset.videoIndex));
+  });
+});
+
 elements.dramaVideo.addEventListener("click", toggleVideoPlayback);
 elements.dramaVideo.addEventListener("timeupdate", syncVideoProgress);
 elements.videoProgress.addEventListener("input", seekVideo);
@@ -243,9 +269,15 @@ function renderView() {
 }
 
 function renderPlayer() {
+  const video = videoOptions[state.currentVideo];
   elements.episodeTitle.textContent = `第 ${state.currentEpisode} 集`;
-  elements.episodeMeta.textContent = `短剧 · 现代 · 第 ${state.currentEpisode} 集`;
+  elements.episodeMeta.textContent = `${video.label} · 短剧 · 现代 · 第 ${state.currentEpisode} 集`;
   elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
+  elements.videoButtons.forEach((button) => {
+    const isActive = Number(button.dataset.videoIndex) === state.currentVideo;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
   elements.saveButton.classList.toggle("is-active", state.saved);
   elements.likeButton.classList.toggle("is-active", state.liked);
   elements.playerLockCard.classList.toggle("is-unlocked", state.unlocked);
@@ -491,6 +523,27 @@ function toggleVideoPlayback() {
   elements.dramaVideo.pause();
 }
 
+function switchVideo(index) {
+  if (index === state.currentVideo || !videoOptions[index]) {
+    return;
+  }
+
+  const nextVideo = videoOptions[index];
+  state.currentVideo = index;
+  state.speedIndex = 0;
+  elements.dramaVideo.pause();
+  elements.dramaVideo.src = nextVideo.src;
+  elements.dramaVideo.poster = nextVideo.poster;
+  elements.dramaVideo.currentTime = 0;
+  elements.dramaVideo.playbackRate = 1;
+  elements.videoProgress.value = "0";
+  elements.speedButton.textContent = "Speed";
+  elements.dramaVideo.load();
+  elements.dramaVideo.play().catch(() => {});
+  renderPlayer();
+  showToast(`已切换到${nextVideo.label}`);
+}
+
 function toggleMute() {
   elements.dramaVideo.muted = !elements.dramaVideo.muted;
   elements.muteButton.querySelector("span").textContent = elements.dramaVideo.muted ? "🔇" : "🔈";
@@ -594,6 +647,7 @@ function resetDemo() {
   state.history = [];
   state.activeTab = "pool";
   state.view = "player";
+  state.currentVideo = 0;
   state.currentEpisode = 3;
   state.saved = false;
   state.liked = false;
