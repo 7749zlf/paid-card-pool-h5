@@ -157,8 +157,6 @@ const elements = {
   profileView: document.getElementById("profile-view"),
   videoStage: document.querySelector(".video-stage"),
   dramaVideo: document.getElementById("drama-video"),
-  videoPositionText: document.getElementById("video-position-text"),
-  videoPositionDots: document.querySelectorAll(".video-position-dot"),
   videoProgress: document.getElementById("video-progress"),
   muteButton: document.getElementById("mute-button"),
   saveButton: document.getElementById("save-button"),
@@ -368,10 +366,6 @@ function renderPlayer() {
   elements.episodeTitle.textContent = `第 ${state.currentEpisode} 集`;
   elements.episodeMeta.textContent = `${video.label} · 短剧 · 现代 · 第 ${state.currentEpisode} 集`;
   elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
-  elements.videoPositionText.textContent = `${state.currentVideo + 1}/${videoOptions.length}`;
-  elements.videoPositionDots.forEach((dot, index) => {
-    dot.classList.toggle("is-active", index === state.currentVideo);
-  });
   elements.saveButton.classList.toggle("is-active", state.saved);
   elements.likeButton.classList.toggle("is-active", state.liked);
   elements.playerLockCard.classList.toggle("is-unlocked", state.unlocked);
@@ -714,7 +708,6 @@ function switchVideo(index) {
   elements.dramaVideo.load();
   elements.dramaVideo.play().catch(() => {});
   renderPlayer();
-  showToast(`已切换到${nextVideo.label}`);
 }
 
 function isInteractiveTarget(target) {
