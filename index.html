@@ -37,11 +37,12 @@
             </button>
           </header>
 
-          <nav class="video-switcher" aria-label="切换视频">
-            <button class="video-switch-button is-active" type="button" data-video-index="0" aria-pressed="true">视频 1</button>
-            <button class="video-switch-button" type="button" data-video-index="1" aria-pressed="false">视频 2</button>
-            <button class="video-switch-button" type="button" data-video-index="2" aria-pressed="false">视频 3</button>
-          </nav>
+          <div class="video-position" aria-live="polite">
+            <span class="video-position-text" id="video-position-text">1/3</span>
+            <span class="video-position-dot is-active" aria-hidden="true"></span>
+            <span class="video-position-dot" aria-hidden="true"></span>
+            <span class="video-position-dot" aria-hidden="true"></span>
+          </div>
 
           <div class="player-actions" aria-label="播放操作">
             <button class="side-action" id="mute-button" type="button">

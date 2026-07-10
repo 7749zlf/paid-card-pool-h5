@@ -145,15 +145,20 @@ const state = {
   currentEpisode: 3,
   saved: false,
   liked: false,
-  speedIndex: 0
+  speedIndex: 0,
+  touchStartY: 0,
+  touchStartX: 0,
+  wheelLocked: false
 };
 
 const elements = {
   playerView: document.getElementById("player-view"),
   poolView: document.getElementById("pool-view"),
   profileView: document.getElementById("profile-view"),
+  videoStage: document.querySelector(".video-stage"),
   dramaVideo: document.getElementById("drama-video"),
-  videoButtons: document.querySelectorAll(".video-switch-button"),
+  videoPositionText: document.getElementById("video-position-text"),
+  videoPositionDots: document.querySelectorAll(".video-position-dot"),
   videoProgress: document.getElementById("video-progress"),
   muteButton: document.getElementById("mute-button"),
   saveButton: document.getElementById("save-button"),
@@ -251,12 +256,6 @@ elements.morePayButton.addEventListener("click", () => {
   openPaymentSheet();
 });
 
-elements.videoButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    switchVideo(Number(button.dataset.videoIndex));
-  });
-});
-
 elements.linkEmailButton.addEventListener("click", () => {
   elements.emailStatus.textContent = "已绑定";
   showToast("邮箱已绑定");
@@ -288,6 +287,9 @@ elements.profileConsumptionRecordButton.addEventListener("click", () => {
   renderTabs();
 });
 
+elements.videoStage.addEventListener("touchstart", handleVideoTouchStart, { passive: true });
+elements.videoStage.addEventListener("touchend", handleVideoTouchEnd);
+elements.videoStage.addEventListener("wheel", handleVideoWheel, { passive: false });
 elements.dramaVideo.addEventListener("click", toggleVideoPlayback);
 elements.dramaVideo.addEventListener("timeupdate", syncVideoProgress);
 elements.videoProgress.addEventListener("input", seekVideo);
@@ -366,10 +368,9 @@ function renderPlayer() {
   elements.episodeTitle.textContent = `第 ${state.currentEpisode} 集`;
   elements.episodeMeta.textContent = `${video.label} · 短剧 · 现代 · 第 ${state.currentEpisode} 集`;
   elements.episodeButton.querySelector("strong").textContent = `Ep.${state.currentEpisode}`;
-  elements.videoButtons.forEach((button) => {
-    const isActive = Number(button.dataset.videoIndex) === state.currentVideo;
-    button.classList.toggle("is-active", isActive);
-    button.setAttribute("aria-pressed", String(isActive));
+  elements.videoPositionText.textContent = `${state.currentVideo + 1}/${videoOptions.length}`;
+  elements.videoPositionDots.forEach((dot, index) => {
+    dot.classList.toggle("is-active", index === state.currentVideo);
   });
   elements.saveButton.classList.toggle("is-active", state.saved);
   elements.likeButton.classList.toggle("is-active", state.liked);
@@ -642,6 +643,59 @@ function toggleVideoPlayback() {
   elements.dramaVideo.pause();
 }
 
+function handleVideoTouchStart(event) {
+  if (isInteractiveTarget(event.target)) {
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  state.touchStartY = touch.clientY;
+  state.touchStartX = touch.clientX;
+}
+
+function handleVideoTouchEnd(event) {
+  if (isInteractiveTarget(event.target) || !state.touchStartY) {
+    return;
+  }
+
+  const touch = event.changedTouches[0];
+  const deltaY = state.touchStartY - touch.clientY;
+  const deltaX = state.touchStartX - touch.clientX;
+  state.touchStartY = 0;
+  state.touchStartX = 0;
+
+  if (Math.abs(deltaY) < 54 || Math.abs(deltaY) < Math.abs(deltaX) * 1.2) {
+    return;
+  }
+
+  switchVideoByStep(deltaY > 0 ? 1 : -1);
+}
+
+function handleVideoWheel(event) {
+  if (isInteractiveTarget(event.target) || Math.abs(event.deltaY) < 28) {
+    return;
+  }
+
+  event.preventDefault();
+  if (state.wheelLocked) {
+    return;
+  }
+
+  state.wheelLocked = true;
+  switchVideoByStep(event.deltaY > 0 ? 1 : -1);
+  window.setTimeout(() => {
+    state.wheelLocked = false;
+  }, 520);
+}
+
+function switchVideoByStep(step) {
+  const nextIndex = state.currentVideo + step;
+  if (nextIndex < 0 || nextIndex >= videoOptions.length) {
+    return;
+  }
+  switchVideo(nextIndex);
+}
+
 function switchVideo(index) {
   if (index === state.currentVideo || !videoOptions[index]) {
     return;
@@ -661,6 +715,10 @@ function switchVideo(index) {
   elements.dramaVideo.play().catch(() => {});
   renderPlayer();
   showToast(`已切换到${nextVideo.label}`);
+}
+
+function isInteractiveTarget(target) {
+  return Boolean(target.closest("button, input, textarea, select, a, label"));
 }
 
 function toggleMute() {

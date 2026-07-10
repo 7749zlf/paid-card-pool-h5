@@ -105,7 +105,7 @@ img {
 }
 
 .player-topbar,
-.video-switcher,
+.video-position,
 .player-actions,
 .player-copy,
 .player-progress,
@@ -138,31 +138,37 @@ img {
   backdrop-filter: blur(10px);
 }
 
-.video-switcher {
-  top: 82px;
-  left: 18px;
+.video-position {
+  top: 92px;
   right: 18px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.video-switch-button {
-  min-height: 36px;
-  border: 1px solid rgba(255, 247, 234, 0.2);
-  border-radius: var(--radius);
-  color: rgba(255, 247, 234, 0.78);
+  justify-items: center;
+  gap: 7px;
+  padding: 8px 6px;
+  border: 1px solid rgba(255, 247, 234, 0.16);
+  border-radius: 999px;
   background: rgba(8, 10, 9, 0.34);
-  cursor: pointer;
   backdrop-filter: blur(10px);
-  font-size: 0.86rem;
-  font-weight: 800;
 }
 
-.video-switch-button.is-active {
-  color: #fff9ef;
-  border-color: rgba(217, 101, 79, 0.64);
-  background: rgba(217, 101, 79, 0.78);
+.video-position-text {
+  color: rgba(255, 247, 234, 0.78);
+  font-size: 0.72rem;
+  font-weight: 800;
+  writing-mode: vertical-rl;
+}
+
+.video-position-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 247, 234, 0.34);
+}
+
+.video-position-dot.is-active {
+  height: 18px;
+  border-radius: 999px;
+  background: var(--accent-strong);
 }
 
 .player-actions {
