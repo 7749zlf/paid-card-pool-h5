@@ -6,6 +6,10 @@
 
 访问地址：https://7749zlf.github.io/paid-card-pool-h5/
 
+## 正式项目规划
+
+- [短剧付费抽卡平台正式项目规划](docs/formal-project-plan.md)
+
 ## 本地查看
 
 直接打开 `index.html` 即可查看页面。
